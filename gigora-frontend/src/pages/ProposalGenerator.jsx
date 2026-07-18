@@ -1,140 +1,239 @@
 import React, { useState } from 'react';
+import { toast } from 'react-hot-toast';
+import { apiRequest } from '../api';
 
-export default function ProposalGenerator({ userToken }) {
+export default function ProposalGenerator({ onActionComplete, triggerLimitModal }) {
   const [jobPost, setJobPost] = useState('');
-  const [proposal, setProposal] = useState('');
+  const [tone, setTone] = useState('professional'); // 'professional', 'friendly', 'confident'
+  const [skill, setSkill] = useState('Web Dev');
+  const [platform, setPlatform] = useState('Fiverr'); // 'Fiverr', 'Upwork'
+  const [length, setLength] = useState('medium'); // 'short', 'medium', 'long'
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [result, setResult] = useState(null);
 
-  const handleGenerate = async () => {
-    if (!jobPost.trim()) return;
+  const handleGenerate = async (e) => {
+    if (e) e.preventDefault();
+    if (!jobPost.trim()) {
+      toast.error('Please paste a client job posting description first.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/proposal', {
+      const response = await apiRequest('/proposal', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job_post: jobPost, user_id: userToken }),
+        body: JSON.stringify({ job_post: jobPost, tone, skill, platform, length }),
       });
-      const data = await res.json();
-      setProposal(data.proposal);
+
+      if (response.success) {
+        setResult(response.data);
+        toast.success('Proposal drafted beautifully!');
+        onActionComplete();
+      }
     } catch (err) {
-      alert('Error generating proposal');
+      const msg = err.message || '';
+      if (msg.includes('Limit reached') || msg.includes('429')) {
+        triggerLimitModal();
+      } else {
+        toast.error(msg || 'Failed to generate your matching proposal.');
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(proposal);
-    setCopied(true);
-    setTimeout(() => {
-      setCopied(false);
-    }, 2000);
+  const handleDownloadTxt = () => {
+    if (!result || !result.proposal) return;
+
+    const timestamp = new Date().toISOString().split('T')[0];
+    const element = document.createElement("a");
+    const file = new Blob([result.proposal], { type: 'text/plain;charset=utf-8' });
+
+    element.href = URL.createObjectURL(file);
+    element.download = `proposal-${timestamp}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    toast.success('Proposal downloaded as text file!');
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Proposal text copied!');
   };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h2 className="text-3xl font-extrabold text-white tracking-tight">Proposal Generator</h2>
-        <p className="text-slate-400 mt-2 text-sm max-w-xl">
-          Instantly craft high-converting proposals. Paste the client's job requirements and get an custom application ready to send.
-        </p>
+    <div className="space-y-6">
+      <div className="flex flex-col space-y-2">
+        <h1 className="text-2xl font-bold text-white">📝 Smart Proposal Generator</h1>
+        <p className="text-sm text-slate-400">Draft personalized, high-converting freelance bidding templates based on specific job openings.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        {/* Input Card */}
-        <div className="p-6 bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-xl space-y-5">
-          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-850 pb-3">Job Details</h3>
-          
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* OPTIONS & FORM INPUT CONTROLS */}
+        <form onSubmit={handleGenerate} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-5">
+
+          {/* TONE SELECTION BUTTONS */}
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-              Job Description / Post
-            </label>
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Select Copy Tone</label>
+            <div className="grid grid-cols-3 gap-2">
+              {['professional', 'friendly', 'confident'].map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTone(t)}
+                  className={`capitalize py-2.5 rounded-xl text-xs font-semibold border transition-all duration-200 ${tone === t ? 'bg-purple-600 border-purple-500 text-white shadow-md shadow-purple-600/20' : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'}`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* CHIP PLATFORM TOGGLE BOX */}
+          <div>
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Target Platform</label>
+            <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+              {['Fiverr', 'Upwork'].map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPlatform(p)}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition ${platform === p ? 'bg-slate-800 text-purple-400 border border-slate-700/60' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* SKILLS MULTI-DROPDOWN MENU */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Domain Specialty</label>
+              <select
+                value={skill}
+                onChange={(e) => setSkill(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-purple-500 min-h-[44px]"
+              >
+                <option value="Web Dev">Web Dev</option>
+                <option value="Graphic Design">Graphic Design</option>
+                <option value="Writing">Writing</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Mobile Dev">Mobile Dev</option>
+                <option value="AI/ML">AI / ML</option>
+                <option value="Other">Other Specialty</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Length Control</label>
+              <select
+                value={length}
+                onChange={(e) => setLength(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-purple-500 min-h-[44px]"
+              >
+                <option value="short">Short (~100 words)</option>
+                <option value="medium">Medium (~200 words)</option>
+                <option value="long">Long (~300 words)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* INPUT POST DETAILS */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-200 mb-1.5">Client Job Specification Post</label>
             <textarea
-              rows="7"
-              placeholder="Paste the job description from Upwork, Fiverr, or Freelancer here..."
               value={jobPost}
               onChange={(e) => setJobPost(e.target.value)}
-              className="w-full p-4 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-650 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm leading-relaxed"
+              rows={5}
+              placeholder="Paste the core requirements or Upwork/Fiverr custom offer description details here..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
 
-          <div className="flex justify-end">
-            <button 
-              onClick={handleGenerate} 
-              disabled={loading || !jobPost.trim()}
-              className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          <div className="flex space-x-2 pt-1">
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:from-slate-800 disabled:to-slate-800 text-white font-bold h-12 rounded-xl transition shadow-lg flex items-center justify-center space-x-2 text-sm"
             >
-              {loading ? (
-                <>
-                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  <span>Generating Proposal...</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                  <span>Generate Proposal</span>
-                </>
-              )}
+              {loading ? <span>Assembling Few-Shot Blueprint Models...</span> : <span>✨ Draft Proposal Portfolio</span>}
             </button>
-          </div>
-        </div>
-
-        {/* Output Card */}
-        <div className="p-6 bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-xl min-h-[440px] flex flex-col justify-between">
-          <div className="space-y-5 flex-1 flex flex-col">
-            <div className="flex justify-between items-center border-b border-slate-850 pb-3">
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Tailored Proposal</h3>
-              {proposal && (
-                <button
-                  onClick={handleCopy}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                    copied 
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                      : 'bg-slate-950 hover:bg-slate-850 text-slate-400 hover:text-white border-slate-800 hover:border-slate-700'
-                  }`}
-                >
-                  {copied ? (
-                    <>
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span>Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                      </svg>
-                      <span>Copy Proposal</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-
-            {proposal ? (
-              <div className="flex-1 overflow-y-auto bg-slate-950 border border-slate-850 rounded-xl p-5 text-sm text-slate-350 leading-relaxed font-sans whitespace-pre-wrap max-h-[340px]">
-                {proposal}
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-slate-850 rounded-xl">
-                <div className="w-12 h-12 rounded-2xl bg-slate-950 flex items-center justify-center text-slate-600 mb-4">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <p className="text-slate-500 text-sm">
-                  Your customized proposal will appear here after clicking "Generate Proposal".
-                </p>
-              </div>
+            {result && (
+              <button
+                type="button"
+                onClick={handleGenerate}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 h-12 rounded-xl border border-slate-700 transition text-sm font-medium"
+              >
+                🔄
+              </button>
             )}
           </div>
+        </form>
+
+        {/* PROPOSAL RESPONSE RENDERING GRID */}
+        <div className="space-y-6">
+          {loading && (
+            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 animate-pulse">
+              <div className="h-4 bg-slate-800 rounded w-1/4"></div>
+              <div className="space-y-2">
+                <div className="h-4 bg-slate-800 rounded w-full"></div>
+                <div className="h-4 bg-slate-800 rounded w-5/6"></div>
+                <div className="h-4 bg-slate-800 rounded w-4/5"></div>
+              </div>
+            </div>
+          )}
+
+          {!loading && !result && (
+            <div className="bg-slate-900/50 border border-slate-800 border-dashed rounded-2xl p-12 text-center flex flex-col items-center justify-center text-slate-500">
+              <span className="text-4xl mb-3">📄</span>
+              <p className="text-sm font-medium">Ready for Generation</p>
+              <p className="text-xs text-slate-600 mt-1">Configure your tone matching styles above to compile specialized bid cards.</p>
+            </div>
+          )}
+
+          {!loading && result && (
+            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-5">
+              <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                <div>
+                  <h3 className="text-xs font-bold uppercase text-slate-400 tracking-wider">Generated Copy</h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Calculated Length: <strong className="text-purple-400">{result.word_count}</strong> words</p>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => copyToClipboard(result.proposal)}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition font-medium"
+                  >
+                    📋 Copy Text
+                  </button>
+                  <button
+                    onClick={handleDownloadTxt}
+                    className="bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white text-xs px-3 py-1.5 rounded-lg border border-purple-500/30 transition font-medium"
+                  >
+                    💾 Save .TXT File
+                  </button>
+                </div>
+              </div>
+
+              {/* LIVE RESPONSE BOX */}
+              <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl text-sm text-slate-200 whitespace-pre-line leading-relaxed max-h-80 overflow-y-auto font-mono">
+                {result.proposal}
+              </div>
+
+              {/* RECOVERY CHIP SELLING BADGES */}
+              <div className="space-y-2 pt-2">
+                <label className="block text-xs font-bold uppercase text-emerald-400 tracking-wider">Extracted Pitch Pillars</label>
+                <div className="flex flex-wrap gap-2">
+                  {result.key_points.map((point, i) => (
+                    <span key={i} className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-3 py-1 rounded-full font-medium">
+                      ✓ {point}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

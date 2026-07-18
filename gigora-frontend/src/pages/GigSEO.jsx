@@ -1,154 +1,238 @@
 import React, { useState } from 'react';
+import { toast } from 'react-hot-toast';
+import { apiRequest } from '../api';
 
-export default function GigSEO() {
+export default function SeoOptimizer({ onActionComplete, triggerLimitModal }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [result, setResult] = useState('');
+  const [category, setCategory] = useState('Web Development');
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [result, setResult] = useState(null);
 
-  const handleOptimize = async () => {
-    if (!title.trim() || !description.trim()) return;
+  // Character limit tracking configuration
+  const MAX_TITLE_CHARS = 80;
+  const isTitleOverLimit = title.length > MAX_TITLE_CHARS;
+
+  const handleOptimize = async (e) => {
+    if (e) e.preventDefault();
+    if (!title.trim() || !description.trim()) {
+      toast.error('Please fill out all fields before submitting.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/seo', {
+      const response = await apiRequest('/seo', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, description }),
+        body: JSON.stringify({ title, description, category }),
       });
-      const data = await res.json();
-      setResult(data.optimized);
+
+      if (response.success) {
+        setResult(response.data);
+        toast.success('Gig optimized successfully!');
+        onActionComplete(); // Refresh usage limits banner
+      }
     } catch (err) {
-      alert('Error optimizing gig');
+      const msg = err.message || '';
+      if (msg.includes('Limit reached') || msg.includes('429')) {
+        triggerLimitModal();
+      } else {
+        toast.error(msg || 'Failed to optimize gig SEO parameters.');
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(result);
-    setCopied(true);
-    setTimeout(() => {
-      setCopied(false);
-    }, 2000);
+  const copyToClipboard = (text, fieldName) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${fieldName} copied to clipboard!`);
   };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h2 className="text-3xl font-extrabold text-white tracking-tight">Gig SEO Optimizer</h2>
-        <p className="text-slate-400 mt-2 text-sm max-w-xl">
-          Supercharge your gig listings. Inject high-traffic search terms naturally to boost rankings on platform search results.
-        </p>
+    <div className="space-y-6">
+      <div className="flex flex-col space-y-2">
+        <h1 className="text-2xl font-bold text-white">🔍 Gig SEO Optimizer</h1>
+        <p className="text-sm text-slate-400">Optimize your Fiverr gig title, tags, and descriptions to match expert search algorithms.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        {/* Input Panel */}
-        <div className="p-6 bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-xl space-y-5">
-          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-850 pb-3">Original Listing</h3>
-          
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* INPUT FORM BLOCK */}
+        <form onSubmit={handleOptimize} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-              Gig Title
-            </label>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="text-sm font-semibold text-slate-200">Gig Title</label>
+              <span className={`text-xs font-bold ${isTitleOverLimit ? 'text-rose-500' : 'text-slate-500'}`}>
+                {title.length} / {MAX_TITLE_CHARS} Chars
+              </span>
+            </div>
             <input
               type="text"
-              placeholder="e.g. I will design a modern web application in React..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-650 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm"
+              placeholder="e.g., I will build an automated chatbot utilizing gemini api..."
+              className={`w-full bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[48px] ${isTitleOverLimit ? 'border-rose-500 ring-rose-500/20' : 'border-slate-800'}`}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-              Gig Description
-            </label>
+            <label className="block text-sm font-semibold text-slate-200 mb-1.5">Category</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[48px]"
+            >
+              <option value="Web Development">Web Development</option>
+              <option value="AI and Machine Learning">AI & Machine Learning</option>
+              <option value="Cybersecurity">Cybersecurity</option>
+              <option value="Graphics Design">Graphics Design</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-200 mb-1.5">Current Raw Description</label>
             <textarea
-              rows="6"
-              placeholder="Paste your existing gig description..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full p-4 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-650 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm leading-relaxed"
+              rows={6}
+              placeholder="Paste your raw gig description summary here..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
 
-          <div className="flex justify-end pt-2">
-            <button 
-              onClick={handleOptimize} 
-              disabled={loading || !title.trim() || !description.trim()}
-              className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          <div className="flex space-x-2 pt-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:from-slate-800 disabled:to-slate-800 text-white font-bold h-12 rounded-xl transition shadow-lg shadow-purple-600/10 flex items-center justify-center space-x-2"
             >
               {loading ? (
-                <>
-                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  <span>Optimizing Listing...</span>
-                </>
+                <span>Generating Optimization Vectors...</span>
               ) : (
-                <>
-                  <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  <span>Optimize Gig</span>
-                </>
+                <><span>🚀 Optimize Gig Features</span></>
               )}
             </button>
-          </div>
-        </div>
-
-        {/* Output Panel */}
-        <div className="p-6 bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-xl min-h-[400px] flex flex-col justify-between">
-          <div className="space-y-5 flex-1 flex flex-col">
-            <div className="flex justify-between items-center border-b border-slate-850 pb-3">
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Optimized Output</h3>
-              {result && (
-                <button
-                  onClick={handleCopy}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                    copied 
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                      : 'bg-slate-950 hover:bg-slate-850 text-slate-400 hover:text-white border-slate-800 hover:border-slate-700'
-                  }`}
-                >
-                  {copied ? (
-                    <>
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span>Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                      </svg>
-                      <span>Copy Output</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-
-            {result ? (
-              <div className="flex-1 overflow-y-auto bg-slate-950 border border-slate-850 rounded-xl p-4 text-sm text-slate-300 leading-relaxed font-mono whitespace-pre-wrap max-h-[300px]">
-                {result}
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-slate-850 rounded-xl">
-                <div className="w-12 h-12 rounded-2xl bg-slate-950 flex items-center justify-center text-slate-600 mb-4">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                </div>
-                <p className="text-slate-500 text-sm">
-                  Your optimized SEO description will appear here after clicking "Optimize Gig".
-                </p>
-              </div>
+            {result && (
+              <button
+                type="button"
+                onClick={handleOptimize}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 h-12 rounded-xl border border-slate-700 transition text-sm font-medium"
+              >
+                🔄 Regenerate
+              </button>
             )}
           </div>
+        </form>
+
+        {/* RESULTS METRICS GRID PANELS */}
+        <div className="space-y-6">
+          {loading && (
+            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 animate-pulse">
+              <div className="h-5 bg-slate-800 rounded w-1/3"></div>
+              <div className="space-y-2">
+                <div className="h-4 bg-slate-800 rounded w-full"></div>
+                <div className="h-4 bg-slate-800 rounded w-5/6"></div>
+              </div>
+              <div className="h-24 bg-slate-800 rounded w-full"></div>
+            </div>
+          )}
+
+          {!loading && !result && (
+            <div className="bg-slate-900/50 border border-slate-800 border-dashed rounded-2xl p-12 text-center flex flex-col items-center justify-center text-slate-500">
+              <span className="text-4xl mb-3">🎯</span>
+              <p className="text-sm font-medium">Ready for Optimization</p>
+              <p className="text-xs text-slate-600 mt-1">Submit your title and description to run backend keyword quality algorithms.</p>
+            </div>
+          )}
+
+          {!loading && result && (
+            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-6">
+              {/* SCORE LOGIC BREAKDOWN TRACKERS */}
+              <div className="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wide">SEO Score Breakdown</h3>
+                  <span className="text-lg font-black text-white">{result.scores.overall_score}%</span>
+                </div>
+
+                {/* Title Tracker */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-semibold text-slate-400">
+                    <span>Title Strength</span>
+                    <span>{result.scores.title_strength}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-purple-500 rounded-full transition-all duration-500" style={{ width: `${result.scores.title_strength}%` }}></div>
+                  </div>
+                </div>
+
+                {/* Tag Tracker */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-semibold text-slate-400">
+                    <span>Tag Quality Match</span>
+                    <span>{result.scores.tag_quality}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${result.scores.tag_quality}%` }}></div>
+                  </div>
+                </div>
+
+                {/* Description Tracker */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-semibold text-slate-400">
+                    <span>Description Length Optimization</span>
+                    <span>{result.scores.description_length}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${result.scores.description_length}%` }}></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* OPTIMIZED TITLE ROW */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Optimized Title</label>
+                  <button onClick={() => copyToClipboard(result.optimized_title, 'Title')} className="text-xs text-purple-400 font-semibold hover:underline">Copy Title</button>
+                </div>
+                <div className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm font-medium text-slate-100">{result.optimized_title}</div>
+              </div>
+
+              {/* TAG DISPLAY COMPONENT BADGES */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold uppercase text-slate-400 tracking-wider">Validated Search Tags</label>
+                <div className="flex flex-wrap gap-2">
+                  {result.tags.map((tag, idx) => (
+                    <span
+                      key={idx}
+                      className={`text-xs px-3 py-1.5 font-bold rounded-lg border flex items-center space-x-1.5 ${tag.valid ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'}`}
+                    >
+                      <span>{tag.text}</span>
+                      <span className="text-[10px] opacity-70">({tag.valid ? 'Valid' : 'Invalid'})</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* OPTIMIZED DESCRIPTION CONTAINER */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Optimized Description Copy</label>
+                  <button onClick={() => copyToClipboard(result.optimized_description, 'Description')} className="text-xs text-purple-400 font-semibold hover:underline">Copy Description</button>
+                </div>
+                <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl text-sm text-slate-300 max-h-60 overflow-y-auto whitespace-pre-line leading-relaxed">
+                  {result.optimized_description}
+                </div>
+              </div>
+
+              {/* TIPS BULLET ITEMS */}
+              <div className="space-y-2 border-t border-slate-800 pt-4">
+                <label className="block text-xs font-bold uppercase text-amber-400 tracking-wider">System AI Action Tips</label>
+                <ul className="list-disc pl-4 text-xs text-slate-400 space-y-1">
+                  {result.tips.map((tip, idx) => <li key={idx}>{tip}</li>)}
+                </ul>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
