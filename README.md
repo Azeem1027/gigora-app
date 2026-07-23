@@ -41,7 +41,7 @@ Installation
 Clone the repository:
 
 Bash
-git clone https://github.com/your-username/gigora.git
+git clone [https://github.com/your-username/gigora.git](https://github.com/Azeem1027/gigora-app)
 cd gigora
 Setup Backend:
 
@@ -58,14 +58,7 @@ Create a .env file in your root directory (and your backend directory) to store 
 
 Template (.env):
 
-Code snippet
-REACT_APP_SUPABASE_URL=your_supabase_url_here
-REACT_APP_SUPABASE_ANON_KEY=your_supabase_key_here
 
-GEMINI_API_KEY=your_gemini_key_here
-GROQ_API_KEY=your_groq_key_here
-COHERE_API_KEY=your_cohere_key_here
-Running the Application
 Start Backend:
 
 Bash
@@ -76,11 +69,6 @@ Start Frontend:
 Bash
 cd gigora-frontend
 npm start
-🔐 Security Note
-DO NOT push your .env file to GitHub. Ensure your .gitignore file includes .env to prevent your secret keys from being leaked.
-
-Pro-Tip for your GitHub Repo
-Since you are setting up the repo now, ensure you create a .gitignore file before you add your files. If you have already added files, you can run:
 
 Bash
 echo ".env" >> .gitignore
