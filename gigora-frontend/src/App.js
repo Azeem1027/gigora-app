@@ -36,7 +36,7 @@ export default function App() {
   const fetchUsage = useCallback(async () => {
     if (!session || !session.user || !session.user.id) return;
     try {
-      const response = await fetch('http://localhost:8001/api/usage', {
+      const response = await fetch('http://localhost:8000/api/usage', {
         headers: { 'X-User-Id': session.user.id }
       });
       if (!response.ok) return;

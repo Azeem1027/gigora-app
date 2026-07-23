@@ -30,7 +30,7 @@ export default function SeoOptimizer({ onActionComplete, triggerLimitModal }) {
       if (response.success) {
         setResult(response.data);
         toast.success('Gig optimized successfully!');
-        onActionComplete(); // Refresh usage limits banner
+      //  onActionComplete(); // Refresh usage limits banner
       }
     } catch (err) {
       const msg = err.message || '';
