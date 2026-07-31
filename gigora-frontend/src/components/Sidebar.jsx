@@ -47,8 +47,8 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                   onClick={() => setActiveTab(item.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${
                     isActive 
-                      ? 'bg-indigo-650 text-white shadow-md shadow-indigo-500/10' 
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850/50'
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/10' 
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
                   }`}
                 >
                   <span className={isActive ? 'text-white' : 'text-slate-500'}>
@@ -62,8 +62,8 @@ export default function Sidebar({ activeTab, setActiveTab }) {
         </div>
       </div>
 
-      {/* Sidebar Footer Panel */}
-      <div className="p-4 rounded-2xl bg-slate-950/50 border border-slate-850/80">
+      {/* Engine Status Block */}
+      <div className="p-4 rounded-2xl bg-slate-950/50 border border-slate-800/80">
         <div className="flex items-center gap-2 mb-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -71,8 +71,8 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           </span>
         </div>
         <p className="text-[11px] text-slate-500 leading-normal">
-          AI latency: 180ms <br />
-          Quota: Unlimited (Pro)
+          AI latency: ~180ms <br />
+          System Status: Operational
         </p>
       </div>
     </aside>

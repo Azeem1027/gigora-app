@@ -1,38 +1,31 @@
-.App {
-  text-align: center;
+/* Gigora Custom Theme Enhancements */
+
+/* Custom Scrollbar for Dark Interface */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+::-webkit-scrollbar-track {
+  background: #090d16;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
 }
 
-.App-link {
-  color: #61dafb;
+/* Glassmorphism Header Utility */
+.combined-header {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Smooth Transition for UI Elements */
+.layout-strip {
+  transition: all 0.2s ease-in-out;
 }

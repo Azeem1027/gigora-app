@@ -1,49 +1,43 @@
-import { supabase } from './supabaseClient';
+// src/api.js
+const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+/**
+ * Universal API Request Helper
+ */
+export const apiRequest = async (endpoint, options = {}) => {
+  const { body, headers = {}, userId, method = 'POST', ...customConfig } = options;
 
-const getAuthHeaders = () => {
-    const token = localStorage.getItem("gigora_token") || "";
-    return {
-        "Content-Type": "application/json",
-        "Authorization": token ? `Bearer ${token}` : "",
-    };
+  const config = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(userId ? { 'X-User-Id': userId } : {}),
+      ...headers,
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+    ...customConfig,
+  };
+
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const response = await fetch(`${BASE_URL}${cleanEndpoint}`, config);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `API Request Error [${endpoint}]: ${response.statusText}`);
+  }
+
+  return await response.json();
 };
 
-export const apiRequest = async (endpoint, options = {}) => {
-    const url = `${API_BASE_URL}${endpoint}`;
-    const headers = getAuthHeaders();
+// Endpoint Specific Named Helpers
+export const analyzeProfile = async (data, userId) => {
+  return apiRequest('/profile-analyzer', { body: data, userId });
+};
 
-    try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.id) {
-            headers["X-User-Id"] = session.user.id;
-        }
-    } catch (err) {
-        console.error("Error retrieving auth session headers:", err);
-    }
+export const generateProposal = async (data, userId) => {
+  return apiRequest('/proposal', { body: data, userId });
+};
 
-    const config = {
-        ...options,
-        headers: {
-            ...headers,
-            ...options.headers,
-        },
-    };
-
-    const response = await fetch(url, config);
-
-    if (response.status === 401) {
-        // Clear dead sessions gracefully
-        localStorage.removeItem("gigora_token");
-        window.location.href = "/login";
-        throw new Error("Session expired. Please log in again.");
-    }
-
-    const result = await response.json();
-    if (!response.ok) {
-        throw new Error(result.detail || "An unexpected network error occurred.");
-    }
-
-    return result;
+export const optimizeSeo = async (data, userId) => {
+  return apiRequest('/seo', { body: data, userId });
 };

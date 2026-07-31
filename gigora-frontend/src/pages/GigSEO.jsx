@@ -1,41 +1,59 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { apiRequest } from '../api';
 
-export default function SeoOptimizer({ onActionComplete, triggerLimitModal }) {
+export default function GigSEO({ onActionComplete, triggerLimitModal }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Web Development');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
-  // Character limit tracking configuration
   const MAX_TITLE_CHARS = 80;
   const isTitleOverLimit = title.length > MAX_TITLE_CHARS;
 
   const handleOptimize = async (e) => {
     if (e) e.preventDefault();
-    if (!title.trim() || !description.trim()) {
-      toast.error('Please fill out all fields before submitting.');
+    if (!title.trim() && !description.trim()) {
+      toast.error('Please fill out at least one field before submitting.');
       return;
     }
 
     setLoading(true);
+    setResult(null);
+
     try {
-      const response = await apiRequest('/seo', {
+      const res = await fetch('http://localhost:5000/api/seo', {
         method: 'POST',
-        body: JSON.stringify({ title, description, category }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          category: category,
+        }),
       });
 
-      if (response.success) {
-        setResult(response.data);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || `Server Error (${res.status})`);
+      }
+
+      const dataPayload = data.data || data;
+
+      if (data.success || data.status === 'success' || dataPayload.scores) {
+        setResult(dataPayload);
         toast.success('Gig optimized successfully!');
-      //  onActionComplete(); // Refresh usage limits banner
+        if (typeof onActionComplete === 'function') {
+          onActionComplete();
+        }
       }
     } catch (err) {
+      console.error('SEO Error:', err);
       const msg = err.message || '';
       if (msg.includes('Limit reached') || msg.includes('429')) {
-        triggerLimitModal();
+        if (typeof triggerLimitModal === 'function') triggerLimitModal();
       } else {
         toast.error(msg || 'Failed to optimize gig SEO parameters.');
       }
@@ -45,6 +63,7 @@ export default function SeoOptimizer({ onActionComplete, triggerLimitModal }) {
   };
 
   const copyToClipboard = (text, fieldName) => {
+    if (!text) return;
     navigator.clipboard.writeText(text);
     toast.success(`${fieldName} copied to clipboard!`);
   };
@@ -109,22 +128,13 @@ export default function SeoOptimizer({ onActionComplete, triggerLimitModal }) {
               {loading ? (
                 <span>Generating Optimization Vectors...</span>
               ) : (
-                <><span>🚀 Optimize Gig Features</span></>
+                <span>🚀 Optimize Gig Features</span>
               )}
             </button>
-            {result && (
-              <button
-                type="button"
-                onClick={handleOptimize}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 h-12 rounded-xl border border-slate-700 transition text-sm font-medium"
-              >
-                🔄 Regenerate
-              </button>
-            )}
           </div>
         </form>
 
-        {/* RESULTS METRICS GRID PANELS */}
+        {/* RESULTS PANEL */}
         <div className="space-y-6">
           {loading && (
             <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 animate-pulse">
@@ -147,90 +157,36 @@ export default function SeoOptimizer({ onActionComplete, triggerLimitModal }) {
 
           {!loading && result && (
             <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-6">
-              {/* SCORE LOGIC BREAKDOWN TRACKERS */}
-              <div className="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wide">SEO Score Breakdown</h3>
-                  <span className="text-lg font-black text-white">{result.scores.overall_score}%</span>
-                </div>
-
-                {/* Title Tracker */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-semibold text-slate-400">
-                    <span>Title Strength</span>
-                    <span>{result.scores.title_strength}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-purple-500 rounded-full transition-all duration-500" style={{ width: `${result.scores.title_strength}%` }}></div>
+              {result.scores && (
+                <div className="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wide">SEO Score Breakdown</h3>
+                    <span className="text-lg font-black text-white">{result.scores.overall_score || 0}%</span>
                   </div>
                 </div>
+              )}
 
-                {/* Tag Tracker */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-semibold text-slate-400">
-                    <span>Tag Quality Match</span>
-                    <span>{result.scores.tag_quality}%</span>
+              {result.optimized_title && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Optimized Title</label>
+                    <button onClick={() => copyToClipboard(result.optimized_title, 'Title')} className="text-xs text-purple-400 font-semibold hover:underline">Copy Title</button>
                   </div>
-                  <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${result.scores.tag_quality}%` }}></div>
+                  <div className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm font-medium text-slate-100">{result.optimized_title}</div>
+                </div>
+              )}
+
+              {result.optimized_description && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Optimized Description Copy</label>
+                    <button onClick={() => copyToClipboard(result.optimized_description, 'Description')} className="text-xs text-purple-400 font-semibold hover:underline">Copy Description</button>
+                  </div>
+                  <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl text-sm text-slate-300 max-h-60 overflow-y-auto whitespace-pre-line leading-relaxed">
+                    {result.optimized_description}
                   </div>
                 </div>
-
-                {/* Description Tracker */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-semibold text-slate-400">
-                    <span>Description Length Optimization</span>
-                    <span>{result.scores.description_length}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${result.scores.description_length}%` }}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* OPTIMIZED TITLE ROW */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Optimized Title</label>
-                  <button onClick={() => copyToClipboard(result.optimized_title, 'Title')} className="text-xs text-purple-400 font-semibold hover:underline">Copy Title</button>
-                </div>
-                <div className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm font-medium text-slate-100">{result.optimized_title}</div>
-              </div>
-
-              {/* TAG DISPLAY COMPONENT BADGES */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase text-slate-400 tracking-wider">Validated Search Tags</label>
-                <div className="flex flex-wrap gap-2">
-                  {result.tags.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className={`text-xs px-3 py-1.5 font-bold rounded-lg border flex items-center space-x-1.5 ${tag.valid ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'}`}
-                    >
-                      <span>{tag.text}</span>
-                      <span className="text-[10px] opacity-70">({tag.valid ? 'Valid' : 'Invalid'})</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* OPTIMIZED DESCRIPTION CONTAINER */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Optimized Description Copy</label>
-                  <button onClick={() => copyToClipboard(result.optimized_description, 'Description')} className="text-xs text-purple-400 font-semibold hover:underline">Copy Description</button>
-                </div>
-                <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl text-sm text-slate-300 max-h-60 overflow-y-auto whitespace-pre-line leading-relaxed">
-                  {result.optimized_description}
-                </div>
-              </div>
-
-              {/* TIPS BULLET ITEMS */}
-              <div className="space-y-2 border-t border-slate-800 pt-4">
-                <label className="block text-xs font-bold uppercase text-amber-400 tracking-wider">System AI Action Tips</label>
-                <ul className="list-disc pl-4 text-xs text-slate-400 space-y-1">
-                  {result.tips.map((tip, idx) => <li key={idx}>{tip}</li>)}
-                </ul>
-              </div>
+              )}
             </div>
           )}
         </div>
