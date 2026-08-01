@@ -1,5 +1,7 @@
-fastapi
-uvicorn
-python-dotenv
-pydantic
-google-generativeai
+import os
+import asyncio
+import logging
+import google.generativeai as genai
+from fastapi import HTTPException
+from groq import Groq
+import cohere
