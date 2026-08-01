@@ -1,5 +1,6 @@
 // src/api.js
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const BASE_URL = BACKEND_URL.endsWith('/') ? `${BACKEND_URL}api` : `${BACKEND_URL}/api`;
 
 /**
  * Universal API Request Helper
@@ -41,3 +42,7 @@ export const generateProposal = async (data, userId) => {
 export const optimizeSeo = async (data, userId) => {
   return apiRequest('/seo', { body: data, userId });
 };
+
+export const deleteHistoryItem = async (id, userId) => {
+  return apiRequest(`/history/${id}`, { method: 'DELETE', userId });
+};

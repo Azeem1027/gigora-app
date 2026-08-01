@@ -1,26 +1,24 @@
 import React, { useEffect } from 'react';
 
 const NAV_ITEMS = [
-  { id: 'profile', label: 'Profile Analyzer', icon: '👤' },
-  { id: 'seo', label: 'Optimize Gig SEO', icon: '🔍' },
-  { id: 'proposal', label: 'Write Proposal', icon: '📝' },
-  { id: 'history', label: 'View Past History', icon: '⏳' },
+  { id: 'profile',  label: 'Profile Analyzer', icon: '👤' },
+  { id: 'seo',      label: 'Optimize Gig SEO', icon: '🔍' },
+  { id: 'proposal', label: 'Write Proposal',   icon: '📝' },
+  { id: 'history',  label: 'View Past History', icon: '⏳' },
 ];
 
 export default function Sidebar({
   activeTab,
   setActiveTab,
-  usage,
   userEmail,
   isMobileOpen,
   setIsMobileOpen,
+  onSignOut,
 }) {
-  // Handle ESC key press to close mobile drawer
+  // Close on ESC key
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isMobileOpen) {
-        setIsMobileOpen(false);
-      }
+      if (e.key === 'Escape' && isMobileOpen) setIsMobileOpen(false);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -28,82 +26,96 @@ export default function Sidebar({
 
   const handleTabClick = (tabId) => {
     setActiveTab(tabId);
-    if (setIsMobileOpen) {
-      setIsMobileOpen(false);
-    }
+    setIsMobileOpen(false);
   };
 
   return (
     <>
-      {/* Mobile Backdrop Overlay */}
+      {/* Mobile backdrop */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
           onClick={() => setIsMobileOpen(false)}
-          aria-label="Close mobile sidebar"
         />
       )}
 
-      {/* Navigation Container Drawer */}
+      {/* Sidebar drawer — always fixed, visible on desktop via md:translate-x-0 */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 transform transition-transform duration-300 md:translate-x-0 md:static md:block flex flex-col justify-between ${
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`
+          fixed inset-y-0 left-0 z-50 w-64
+          bg-slate-900 border-r border-slate-800
+          flex flex-col
+          transition-transform duration-300 ease-in-out
+          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
       >
-        <div>
-          {/* Header Branding */}
-          <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800">
-            <div className="flex items-center space-x-3">
-              <span className="text-2xl font-black tracking-wider text-purple-500">
-                GIGORA
-              </span>
-              {usage?.plan === 'pro' && (
-                <span className="bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-0.5 rounded-full font-bold border border-emerald-500/30">
-                  PRO
-                </span>
-              )}
+        {/* Logo / Brand */}
+        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white font-black text-base shadow-md shadow-purple-600/20">
+              G
             </div>
-            <button
-              type="button"
-              className="md:hidden text-slate-400 hover:text-white p-1 rounded-lg transition"
-              onClick={() => setIsMobileOpen(false)}
-              aria-label="Close menu"
-            >
-              ✕
-            </button>
+            <span className="text-lg font-black tracking-wider text-white">
+              GIGO<span className="text-purple-400">RA</span>
+            </span>
           </div>
-
-          {/* Navigation Links */}
-          <nav className="p-4 space-y-2">
-            {NAV_ITEMS.map((item) => {
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleTabClick(item.id)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
-                    isActive
-                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20'
-                      : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                  }`}
-                >
-                  <span>{item.icon}</span>
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
+          {/* Mobile close button */}
+          <button
+            type="button"
+            className="md:hidden text-slate-400 hover:text-white p-1.5 rounded-lg transition"
+            onClick={() => setIsMobileOpen(false)}
+          >
+            ✕
+          </button>
         </div>
 
-        {/* User Account Info Footer */}
-        <div className="p-4 border-t border-slate-800 bg-slate-900/50">
-          <div className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">
-            Logged in as
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {NAV_ITEMS.map((item) => {
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => handleTabClick(item.id)}
+                className={`
+                  w-full flex items-center gap-3 px-4 py-3 rounded-xl
+                  text-sm font-medium transition-all duration-200 text-left
+                  ${isActive
+                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/25'
+                    : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-100'
+                  }
+                `}
+              >
+                <span className="text-base">{item.icon}</span>
+                <span>{item.label}</span>
+                {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60" />}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-slate-800 space-y-3 shrink-0">
+          {/* User pill */}
+          <div className="flex items-center gap-3 px-3 py-2.5 bg-slate-950/50 border border-slate-800 rounded-xl">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white text-xs font-black shrink-0">
+              {userEmail?.[0]?.toUpperCase() || 'U'}
+            </div>
+            <span className="text-xs text-slate-300 font-medium truncate flex-1">{userEmail}</span>
           </div>
-          <div className="text-sm font-medium truncate text-purple-300 mt-0.5">
-            {userEmail || 'user@example.com'}
-          </div>
+
+          {/* Sign Out */}
+          {onSignOut && (
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/15 hover:border-rose-500/30 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer"
+            >
+              <span>🚪</span>
+              <span>Sign Out</span>
+            </button>
+          )}
         </div>
       </aside>
     </>

@@ -1,4 +1,58 @@
-/* Gigora Custom Theme Enhancements */
+/* Gigora Premium UI Theme Enhancements */
+
+/* Font Import */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+/* Core Animation Declarations */
+@keyframes bg-glow {
+  0%, 100% {
+    opacity: 0.15;
+    transform: scale(1) translate(0, 0);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.1) translate(3%, 5%);
+  }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.5; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(0.95); opacity: 0.5; }
+}
+
+@keyframes text-glow-purple {
+  0%, 100% { text-shadow: 0 0 12px rgba(168, 85, 247, 0.4); }
+  50% { text-shadow: 0 0 24px rgba(168, 85, 247, 0.8); }
+}
+
+@keyframes drift-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Glassmorphic Panel Preset */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+.glass-card-interactive {
+  background: rgba(30, 41, 59, 0.35);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-interactive:hover {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(168, 85, 247, 0.25);
+  box-shadow: 0 12px 24px -10px rgba(168, 85, 247, 0.15);
+  transform: translateY(-2px);
+}
 
 /* Custom Scrollbar for Dark Interface */
 ::-webkit-scrollbar {
@@ -7,25 +61,48 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #090d16;
+  background: #020617;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: rgba(147, 51, 234, 0.2);
   border-radius: 9999px;
+  transition: background 0.2s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: rgba(147, 51, 234, 0.45);
 }
 
-/* Glassmorphism Header Utility */
-.combined-header {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+/* Glowing text effects */
+.glowing-text-purple {
+  animation: text-glow-purple 3s ease-in-out infinite;
 }
 
-/* Smooth Transition for UI Elements */
-.layout-strip {
+/* Custom gradient background blur overlay nodes */
+.bg-glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  animation: bg-glow 10s ease-in-out infinite;
+}
+
+/* Custom Premium Input Focus effects */
+.input-premium {
+  background: rgba(3, 7, 18, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   transition: all 0.2s ease-in-out;
+}
+
+.input-premium:focus {
+  border-color: rgba(168, 85, 247, 0.8);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+  background: rgba(3, 7, 18, 0.95);
+}
+
+/* Glowing Indicator Rings */
+.pulse-indicator {
+  animation: pulse-ring 2s infinite ease-in-out;
 }
