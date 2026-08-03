@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '../supabaseClient'; // Adjust path to your initialized Supabase client
 
 export default function Signup({ switchToLogin }) {
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
@@ -13,16 +14,19 @@ export default function Signup({ switchToLogin }) {
     setSuccess(false);
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+      // Supabase Signup Call
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.name, // Store additional user metadata
+          },
+        },
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.detail || 'Signup failed');
+      if (authError) {
+        throw new Error(authError.message);
       }
 
       setSuccess(true);

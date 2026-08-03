@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '../supabaseClient'; // Adjust this path to your supabase client file
 
 export default function Login({ switchToSignup, onLoginSuccess }) {
   const [email, setEmail] = useState('');
@@ -12,21 +13,22 @@ export default function Login({ switchToSignup, onLoginSuccess }) {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+      // Supabase Authentication Call
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Login failed');
+      if (authError) {
+        throw new Error(authError.message);
       }
 
-      localStorage.setItem('token', data.access_token || 'demo-token');
+      // Store access token
+      const token = data.session?.access_token || 'demo-token';
+      localStorage.setItem('token', token);
+
       if (onLoginSuccess) {
-        onLoginSuccess(data.access_token || 'demo-token');
+        onLoginSuccess(token);
       }
     } catch (err) {
       setError(err.message);
